@@ -216,3 +216,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Next.js
+.next/
+
+# Node modules
+node_modules/
+
+# Local environment variables
+.env.local
+
+# TypeScript cache
+tsconfig.tsbuildinfo
+
+# Local error/log files
+*.err
