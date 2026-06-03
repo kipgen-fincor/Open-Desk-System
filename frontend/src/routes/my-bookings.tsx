@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
@@ -45,15 +45,18 @@ function MyBookings() {
 
 function DeskBookings() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   const today = todayISODateIST();
 
-  const { data: bookings = [], refetch } = useQuery({
+  const { data: bookings = [] } = useQuery({
     queryKey: ["all-my-bookings", user?.id],
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("office_bookings")
-        .select("id, booking_date, status, office_desks(desk_code, office_zones(zone_code))")
+        .select(
+          "id, booking_date, status, booking_notes, office_desks(desk_code, office_zones(zone_code))",
+        )
         .eq("user_id", user!.id)
         .order("booking_date", { ascending: true });
       if (error) throw error;
@@ -78,7 +81,8 @@ function DeskBookings() {
     if (error) toast.error(error.message);
     else {
       toast.success("Booking cancelled");
-      await refetch();
+      qc.invalidateQueries({ queryKey: ["all-my-bookings", user.id] });
+      qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
       try {
         await supabase.from("office_audit_logs").insert({
           booking_id: id,
@@ -107,6 +111,7 @@ function DeskBookings() {
                 <div className="font-medium">{formatDateLong(b.booking_date)}</div>
                 <div className="text-sm text-muted-foreground">
                   Desk {b.office_desks?.office_zones?.zone_code}-{b.office_desks?.desk_code}
+                  {b.booking_notes ? ` · ${formatBookingNotes(b.booking_notes)}` : ""}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -222,4 +227,9 @@ function RoomBookings() {
       </AlertDialog>
     </>
   );
+}
+
+function formatBookingNotes(notes: string): string {
+  const firstLine = notes.split("\n")[0]?.trim() ?? notes;
+  return firstLine.replace(/^Time:\s*/i, "");
 }

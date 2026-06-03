@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RoomsRouteImport } from './routes/rooms'
 import { Route as MyBookingsRouteImport } from './routes/my-bookings'
+import { Route as MapRouteImport } from './routes/map'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -32,6 +33,11 @@ const RoomsRoute = RoomsRouteImport.update({
 const MyBookingsRoute = MyBookingsRouteImport.update({
   id: '/my-bookings',
   path: '/my-bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/map': typeof MapRoute
   '/my-bookings': typeof MyBookingsRoute
   '/rooms': typeof RoomsRoute
   '/admin/audit': typeof AdminAuditRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/map': typeof MapRoute
   '/my-bookings': typeof MyBookingsRoute
   '/rooms': typeof RoomsRoute
   '/admin/audit': typeof AdminAuditRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
+  '/map': typeof MapRoute
   '/my-bookings': typeof MyBookingsRoute
   '/rooms': typeof RoomsRoute
   '/admin/audit': typeof AdminAuditRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/map'
     | '/my-bookings'
     | '/rooms'
     | '/admin/audit'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/map'
     | '/my-bookings'
     | '/rooms'
     | '/admin/audit'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/map'
     | '/my-bookings'
     | '/rooms'
     | '/admin/audit'
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
+  MapRoute: typeof MapRoute
   MyBookingsRoute: typeof MyBookingsRoute
   RoomsRoute: typeof RoomsRoute
   BookDateRoute: typeof BookDateRoute
@@ -216,6 +229,13 @@ declare module '@tanstack/react-router' {
       path: '/my-bookings'
       fullPath: '/my-bookings'
       preLoaderRoute: typeof MyBookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -333,6 +353,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
+  MapRoute: MapRoute,
   MyBookingsRoute: MyBookingsRoute,
   RoomsRoute: RoomsRoute,
   BookDateRoute: BookDateRoute,

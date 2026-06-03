@@ -57,6 +57,7 @@ function CalendarView() {
         .from("office_bookings")
         .select("id, booking_date, desk_id, status, office_desks(desk_code, office_zones(zone_code))")
         .eq("user_id", user!.id)
+        .eq("status", "confirmed")
         .gte("booking_date", today)
         .order("booking_date", { ascending: true });
       if (error) throw error;
@@ -76,7 +77,10 @@ function CalendarView() {
       toast.error("Cancellation closed (after 6 PM IST on booking day)");
       return;
     }
-    const { error } = await supabase.from("office_bookings").delete().eq("id", bookingId);
+    const { error } = await supabase
+      .from("office_bookings")
+      .update({ status: "cancelled", cancelled_by_user_id: user?.id })
+      .eq("id", bookingId);
     if (error) toast.error(error.message);
     else {
       toast.success("Booking cancelled");
@@ -149,7 +153,7 @@ function CalendarView() {
                   <Button
                     onClick={() => navigate({ to: "/book/$date", params: { date: selectedISO! } })}
                   >
-                    Browse available desks
+                    Check available desks
                   </Button>
                 )
               )}

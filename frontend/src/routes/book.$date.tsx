@@ -1,8 +1,11 @@
-import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ArrowLeft, Monitor, ArrowUpDown, Lock, Presentation, Check } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { BookDeskDialog, type BookDeskTarget } from "@/components/book-desk-dialog";
+import { OfficeMapBookingView } from "@/components/office-map-booking-view";
+import { BookRoomDialog, type Room } from "@/routes/rooms";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,12 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/lib/supabase";
-import {
-  canCancel,
-  formatDateLong,
-  isWeekend,
-  isWithinBookingWindow,
-} from "@/lib/date-utils";
+import { canCancel, formatDateLong, isWeekend, isWithinBookingWindow } from "@/lib/date-utils";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -38,26 +36,29 @@ function BookPage() {
   );
 }
 
-type DeskRow = {
-  id: string;
-  desk_code: string;
-  has_monitor: boolean;
-  has_standing_desk: boolean;
-  has_locker: boolean;
-  has_whiteboard: boolean;
+type DeskRow = BookDeskTarget & {
   is_active: boolean;
   zone_id: string;
-  office_zones: { zone_code: string; description: string | null };
 };
+
+type BookingRow = {
+  id: string;
+  desk_id: string;
+  user_id: string;
+  status: string;
+  user_profiles?: { full_name: string | null; email: string | null } | null;
+};
+
+type RoomRow = Room;
 
 function BookView() {
   const { date } = useParams({ from: "/book/$date" });
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const { user } = useAuth();
-  const [view, setView] = useState<"grid" | "table">("grid");
+  const [view, setView] = useState<"grid" | "table" | "map">("map");
+  const [selectedDesk, setSelectedDesk] = useState<DeskRow | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<RoomRow | null>(null);
 
-  // Guard date rules
   const dateBlocked = !isWithinBookingWindow(date) || isWeekend(date);
 
   const { data: holiday } = useQuery({
@@ -87,16 +88,33 @@ function BookView() {
     },
   });
 
-  const { data: bookings = [], refetch: refetchBookings } = useQuery({
+  const { data: rooms = [] } = useQuery({
+    queryKey: ["office-rooms-for-map"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("office_rooms")
+        .select(
+          "id, room_code, room_name, room_type, capacity, has_projector, has_whiteboard, has_video_conf, is_active",
+        )
+        .eq("is_active", true)
+        .order("room_code");
+      if (error) throw error;
+      return data as RoomRow[];
+    },
+  });
+
+  const { data: bookings = [] } = useQuery({
     queryKey: ["bookings", date],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("office_bookings")
-        .select("id, desk_id, user_id, status, user_profiles!office_bookings_user_id_fkey(full_name, email)")
+        .select(
+          "id, desk_id, user_id, status, user_profiles!office_bookings_user_id_fkey(full_name, email)",
+        )
         .eq("booking_date", date)
         .eq("status", "confirmed");
       if (error) throw error;
-      return data as any[];
+      return data as unknown as BookingRow[];
     },
   });
 
@@ -128,7 +146,10 @@ function BookView() {
   }, [bookings]);
 
   const zones = useMemo(() => {
-    const grouped = new Map<string, { zone_code: string; description: string | null; desks: DeskRow[] }>();
+    const grouped = new Map<
+      string,
+      { zone_code: string; description: string | null; desks: DeskRow[] }
+    >();
     for (const d of desks) {
       const key = d.zone_id;
       if (!grouped.has(key)) {
@@ -143,60 +164,8 @@ function BookView() {
     return Array.from(grouped.values()).sort((a, b) => a.zone_code.localeCompare(b.zone_code));
   }, [desks]);
 
-  const book = async (desk: DeskRow) => {
+  const cancelBooking = async (bookingId: string) => {
     if (!user) return;
-    if (dateBlocked || holiday) {
-      toast.error("This date isn't bookable");
-      return;
-    }
-    if (myBookingForDate) {
-      toast.error("You already have a booking on this date");
-      return;
-    }
-    if (bookedMap.has(desk.id)) {
-      toast.error("This desk was just taken");
-      refetchBookings();
-      return;
-    }
-    const { data: inserted, error } = await supabase
-      .from("office_bookings")
-      .insert({
-        user_id: user.id,
-        desk_id: desk.id,
-        booking_date: date,
-        status: "confirmed",
-      })
-      .select("id")
-      .single();
-    if (error || !inserted) {
-      toast.error(error?.message ?? "Could not create booking");
-      return;
-    }
-    toast.success(`Booked ${desk.office_zones.zone_code}-${desk.desk_code}`);
-    qc.invalidateQueries({ queryKey: ["bookings", date] });
-    qc.invalidateQueries({ queryKey: ["my-booking-for-date", date, user.id] });
-    qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
-    qc.invalidateQueries({ queryKey: ["all-my-bookings", user.id] });
-
-    // Audit log — must not block the booking flow
-    try {
-      const notes = `Booking created for date ${date}`;
-      await supabase.from("office_audit_logs").insert({
-        booking_id: inserted.id,
-        action_type: "created",
-        performed_by_user_id: user.id,
-        action_notes: notes,
-        action: "created",
-        table_name: "office_bookings",
-        record_id: inserted.id,
-      });
-    } catch (e) {
-      console.error("Audit log insert failed", e);
-    }
-  };
-
-  const cancelMine = async () => {
-    if (!myBookingForDate || !user) return;
     if (!canCancel(date)) {
       toast.error("Cancellation closed (after 6 PM IST)");
       return;
@@ -204,30 +173,43 @@ function BookView() {
     const { error } = await supabase
       .from("office_bookings")
       .update({ status: "cancelled", cancelled_by_user_id: user.id })
-      .eq("id", myBookingForDate.id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Booking cancelled");
-      qc.invalidateQueries({ queryKey: ["bookings", date] });
-      qc.invalidateQueries({ queryKey: ["my-booking-for-date", date, user.id] });
-      qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
-      qc.invalidateQueries({ queryKey: ["all-my-bookings", user.id] });
+      .eq("id", bookingId);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Booking cancelled");
+    qc.invalidateQueries({ queryKey: ["bookings", date] });
+    qc.invalidateQueries({ queryKey: ["my-booking-for-date", date, user.id] });
+    qc.invalidateQueries({ queryKey: ["my-bookings", user.id] });
+    qc.invalidateQueries({ queryKey: ["all-my-bookings", user.id] });
 
-      try {
-        await supabase.from("office_audit_logs").insert({
-          booking_id: myBookingForDate.id,
-          action_type: "cancelled",
-          performed_by_user_id: user.id,
-          action_notes: `Booking cancelled for date ${date}`,
-          action: "cancelled",
-          table_name: "office_bookings",
-          record_id: myBookingForDate.id,
-        });
-      } catch (e) {
-        console.error("Audit log insert failed", e);
-      }
+    try {
+      await supabase.from("office_audit_logs").insert({
+        booking_id: bookingId,
+        action_type: "cancelled",
+        performed_by_user_id: user.id,
+        action_notes: `Booking cancelled for date ${date}`,
+        action: "cancelled",
+        table_name: "office_bookings",
+        record_id: bookingId,
+      });
+    } catch (e) {
+      console.error("Audit log insert failed", e);
     }
   };
+
+  const openDeskDialog = (desk: DeskRow) => {
+    if (!user) return;
+    if (holiday || dateBlocked) {
+      toast.error("This date isn't bookable");
+      return;
+    }
+    setSelectedDesk(desk);
+  };
+
+  const selectionBlocked = (mine: boolean) =>
+    !!holiday || dateBlocked || (!!myBookingForDate && !mine);
 
   return (
     <div className="space-y-6">
@@ -257,19 +239,13 @@ function BookView() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {myBookingForDate && canCancel(date) && (
-            <Button variant="outline" onClick={cancelMine}>
-              Cancel my booking
-            </Button>
-          )}
-          <Tabs value={view} onValueChange={(v) => setView(v as "grid" | "table")}>
-            <TabsList>
-              <TabsTrigger value="grid">Grid</TabsTrigger>
-              <TabsTrigger value="table">Table</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+        <Tabs value={view} onValueChange={(v) => setView(v as "grid" | "table" | "map")}>
+          <TabsList>
+            <TabsTrigger value="map">Map</TabsTrigger>
+            <TabsTrigger value="grid">Grid</TabsTrigger>
+            <TabsTrigger value="table">Table</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {desksLoading ? (
@@ -288,8 +264,7 @@ function BookView() {
                 {z.desks.map((d) => {
                   const booked = bookedMap.get(d.id);
                   const mine = booked && booked.user_id === user?.id;
-                  const disabled =
-                    !!holiday || dateBlocked || (!!myBookingForDate && !mine);
+                  const disabled = selectionBlocked(!!mine);
                   return (
                     <DeskCard
                       key={d.id}
@@ -297,8 +272,13 @@ function BookView() {
                       booked={!!booked}
                       bookedByLabel={booked?.name}
                       mine={!!mine}
-                      disabled={!!disabled}
-                      onBook={() => book(d)}
+                      disabled={disabled}
+                      onSelect={() => openDeskDialog(d)}
+                      onCancel={
+                        mine && booked && canCancel(date)
+                          ? () => cancelBooking(booked.id)
+                          : undefined
+                      }
                     />
                   );
                 })}
@@ -306,6 +286,16 @@ function BookView() {
             </section>
           ))}
         </div>
+      ) : view === "map" ? (
+        <OfficeMapBookingView
+          desks={desks}
+          rooms={rooms}
+          bookedMap={bookedMap}
+          currentUserId={user?.id}
+          disabledForBooking={(_, mine) => selectionBlocked(mine)}
+          onSelectDesk={(desk) => openDeskDialog(desk as DeskRow)}
+          onSelectRoom={setSelectedRoom}
+        />
       ) : (
         <Card className="overflow-hidden">
           <Table>
@@ -322,8 +312,7 @@ function BookView() {
               {desks.map((d) => {
                 const booked = bookedMap.get(d.id);
                 const mine = booked && booked.user_id === user?.id;
-                const disabled =
-                  !!holiday || dateBlocked || (!!myBookingForDate && !mine);
+                const disabled = selectionBlocked(!!mine);
                 return (
                   <TableRow key={d.id}>
                     <TableCell className="font-medium">{d.desk_code}</TableCell>
@@ -345,17 +334,24 @@ function BookView() {
                     <TableCell className="text-right">
                       {mine ? (
                         canCancel(date) ? (
-                          <Button size="sm" variant="outline" onClick={cancelMine}>
-                            Cancel
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Badge className="bg-primary text-primary-foreground">Active</Badge>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => cancelBooking(booked!.id)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground">Locked</span>
+                          <Badge variant="secondary">Active · Locked</Badge>
                         )
                       ) : booked ? (
                         <span className="text-xs text-muted-foreground">—</span>
                       ) : (
-                        <Button size="sm" disabled={disabled} onClick={() => book(d)}>
-                          Book
+                        <Button size="sm" disabled={disabled} onClick={() => openDeskDialog(d)}>
+                          Select
                         </Button>
                       )}
                     </TableCell>
@@ -365,6 +361,17 @@ function BookView() {
             </TableBody>
           </Table>
         </Card>
+      )}
+
+      {selectedDesk && (
+        <BookDeskDialog
+          desk={selectedDesk}
+          defaultDate={date}
+          onClose={() => setSelectedDesk(null)}
+        />
+      )}
+      {selectedRoom && (
+        <BookRoomDialog room={selectedRoom} onClose={() => setSelectedRoom(null)} />
       )}
     </div>
   );
@@ -376,14 +383,16 @@ function DeskCard({
   bookedByLabel,
   mine,
   disabled,
-  onBook,
+  onSelect,
+  onCancel,
 }: {
   desk: DeskRow;
   booked: boolean;
   bookedByLabel?: string;
   mine: boolean;
   disabled: boolean;
-  onBook: () => void;
+  onSelect: () => void;
+  onCancel?: () => void;
 }) {
   return (
     <Card
@@ -419,18 +428,29 @@ function DeskCard({
           {bookedByLabel}
         </div>
       )}
-      <div className="mt-auto pt-2">
+      <div className="mt-auto flex gap-2 pt-2">
         {mine ? (
-          <Button size="sm" variant="outline" className="w-full" disabled>
-            Booked by you
-          </Button>
+          onCancel ? (
+            <>
+              <Button size="sm" variant="default" className="flex-1" disabled>
+                Active
+              </Button>
+              <Button size="sm" variant="outline" className="flex-1" onClick={onCancel}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" variant="outline" className="w-full" disabled>
+              Active · Locked
+            </Button>
+          )
         ) : booked ? (
           <Button size="sm" variant="outline" className="w-full" disabled>
             Unavailable
           </Button>
         ) : (
-          <Button size="sm" className="w-full" disabled={disabled} onClick={onBook}>
-            Book desk
+          <Button size="sm" className="w-full" disabled={disabled} onClick={onSelect}>
+            Select desk
           </Button>
         )}
       </div>

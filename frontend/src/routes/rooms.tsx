@@ -42,7 +42,7 @@ export const Route = createFileRoute("/rooms")({
   ),
 });
 
-type Room = {
+export type Room = {
   id: string;
   room_code: string;
   room_name: string;
@@ -189,7 +189,7 @@ function rangesOverlap(startA: string, endA: string, startB: string, endB: strin
   return timeToMinutes(startA) < timeToMinutes(endB) && timeToMinutes(endA) > timeToMinutes(startB);
 }
 
-function BookRoomDialog({ room, onClose }: { room: Room; onClose: () => void }) {
+export function BookRoomDialog({ room, onClose }: { room: Room; onClose: () => void }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const today = todayISODateIST();
