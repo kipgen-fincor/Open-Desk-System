@@ -15,9 +15,7 @@ export function AppNavbar() {
         to={to}
         className={cn(
           "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-          active
-            ? "bg-[#0E7A8A] text-white"
-            : "text-slate-300 hover:bg-slate-800 hover:text-white",
+          active ? "bg-[#0E7A8A] text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white",
         )}
       >
         <Icon className="h-4 w-4" />
@@ -31,16 +29,12 @@ export function AppNavbar() {
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center">
-            <img
-              src="/fincor-logo.webp"
-              alt="Fincor Logo"
-              className="h-8 w-auto object-contain"
-            />
+            <img src="/fincor-logo.webp" alt="Fincor Logo" className="h-8 w-auto object-contain" />
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
-            {navItem("/", "Calendar", Calendar)}
-            {navItem("/rooms", "Rooms", DoorOpen)}
+            {navItem("/", "Desk Booking", Calendar)}
+            {navItem("/rooms", "Room Booking", DoorOpen)}
             {navItem("/my-bookings", "My Bookings", ClipboardList)}
             {profile?.user_role === "admin" && navItem("/admin", "Admin", Shield)}
           </nav>

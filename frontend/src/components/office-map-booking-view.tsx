@@ -118,6 +118,7 @@ export function OfficeMapBookingView({
   disabledForBooking,
   onSelectDesk,
   onSelectRoom,
+  mode = "both",
 }: {
   desks: OfficeMapDesk[];
   rooms?: OfficeMapRoom[];
@@ -126,19 +127,28 @@ export function OfficeMapBookingView({
   disabledForBooking: (desk: OfficeMapDesk, mine: boolean) => boolean;
   onSelectDesk: (desk: OfficeMapDesk) => void;
   onSelectRoom?: (room: OfficeMapRoom) => void;
+  mode?: "desk" | "room" | "both";
 }) {
   const mapItems = buildMapItems(desks);
   const roomItems = buildRoomItems(rooms);
+  const desksInteractive = mode === "desk" || mode === "both";
+  const roomsInteractive = mode === "room" || mode === "both";
 
   return (
     <Card className="overflow-hidden p-3 sm:p-4">
       <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <Badge className="bg-success text-success-foreground">Available</Badge>
-        <Badge className="bg-destructive text-destructive-foreground">Booked</Badge>
-        <Badge className="bg-primary text-primary-foreground">
-          <Check className="mr-1 h-3 w-3" />
-          Yours
-        </Badge>
+        {desksInteractive ? (
+          <>
+            <Badge className="bg-success text-success-foreground">Available</Badge>
+            <Badge className="bg-destructive text-destructive-foreground">Booked</Badge>
+            <Badge className="bg-primary text-primary-foreground">
+              <Check className="mr-1 h-3 w-3" />
+              Yours
+            </Badge>
+          </>
+        ) : (
+          <Badge className="bg-primary text-primary-foreground">Rooms and call booths</Badge>
+        )}
       </div>
 
       <div className="overflow-auto rounded-md border bg-muted/20">
@@ -152,70 +162,75 @@ export function OfficeMapBookingView({
             className="block h-auto w-full select-none"
             draggable={false}
           />
-          {roomItems.map((room) => (
-            <button
-              key={room.key}
-              type="button"
-              onClick={() => onSelectRoom?.(room.room)}
-              title={`Book ${room.label}`}
-              aria-label={`Book ${room.label}`}
-              className={cn(
-                "absolute box-border cursor-pointer rounded-sm border-2 border-transparent bg-transparent transition-all",
-                "hover:border-[#12324A] hover:bg-[#12324A]/20 hover:shadow-[0_0_0_3px_rgba(255,255,255,0.85),0_10px_22px_rgba(18,50,74,0.35)]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-1",
-                room.roomKind === "call" &&
-                  "rounded-md hover:border-[#0F5F6B] hover:bg-[#0F5F6B]/20 hover:shadow-[0_0_0_3px_rgba(255,255,255,0.85),0_10px_22px_rgba(15,95,107,0.35)]",
-              )}
-              style={boundsStyle(room.bounds)}
-            >
-              <span className="sr-only">{room.displayCode}</span>
-            </button>
-          ))}
-          {mapItems.map((item) => {
-            const representativeDesk = item.desks[0];
-            const bookings = item.desks.map((desk) => bookedMap.get(desk.id)).filter(Boolean);
-            const mine = bookings.some((booking) => booking?.user_id === currentUserId);
-            const booked = bookings[0];
-            const unavailable = bookings.length > 0 && !mine;
-            const disabled = unavailable || mine || disabledForBooking(representativeDesk, mine);
-
-            return (
+          {roomsInteractive &&
+            roomItems.map((room) => (
               <button
-                key={item.key}
+                key={room.key}
                 type="button"
-                disabled={disabled}
-                onClick={() => !disabled && onSelectDesk(representativeDesk)}
-                title={
-                  mine
-                    ? `${item.label}: your booking`
-                    : unavailable
-                      ? `${item.label}: booked by ${booked?.name ?? "Booked"}`
-                      : `${item.label}: click to book`
-                }
-                aria-label={
-                  mine
-                    ? `${item.label}, your booking`
-                    : unavailable
-                      ? `${item.label}, booked`
-                      : `Select ${item.label}`
-                }
+                onClick={() => onSelectRoom?.(room.room)}
+                title={`Book ${room.label}`}
+                aria-label={`Book ${room.label}`}
                 className={cn(
-                  "absolute box-border rounded-sm border-2 border-transparent bg-transparent transition-all",
-                  !disabled &&
-                    "cursor-pointer hover:border-[#12324A] hover:bg-[#12324A]/20 hover:shadow-[0_0_0_3px_rgba(255,255,255,0.85),0_8px_18px_rgba(18,50,74,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-                  mine && "cursor-default border-primary bg-primary/15",
-                  unavailable && "cursor-not-allowed border-destructive/70 bg-destructive/10",
-                  disabled && !unavailable && !mine && "cursor-not-allowed opacity-50",
+                  "absolute box-border cursor-pointer rounded-sm border-2 border-transparent bg-transparent transition-all",
+                  "hover:border-[#12324A] hover:bg-[#12324A]/20 hover:shadow-[0_0_0_3px_rgba(255,255,255,0.85),0_10px_22px_rgba(18,50,74,0.35)]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-1",
+                  room.roomKind === "call" &&
+                    "rounded-md hover:border-[#0F5F6B] hover:bg-[#0F5F6B]/20 hover:shadow-[0_0_0_3px_rgba(255,255,255,0.85),0_10px_22px_rgba(15,95,107,0.35)]",
                 )}
-                style={boundsStyle(item.bounds)}
+                style={boundsStyle(room.bounds)}
               >
-                <span className="sr-only">{item.label}</span>
-                {mine && (
-                  <Check className="absolute right-0.5 top-0.5 h-3 w-3 text-primary" aria-hidden />
-                )}
+                <span className="sr-only">{room.displayCode}</span>
               </button>
-            );
-          })}
+            ))}
+          {desksInteractive &&
+            mapItems.map((item) => {
+              const representativeDesk = item.desks[0];
+              const bookings = item.desks.map((desk) => bookedMap.get(desk.id)).filter(Boolean);
+              const mine = bookings.some((booking) => booking?.user_id === currentUserId);
+              const booked = bookings[0];
+              const unavailable = bookings.length > 0 && !mine;
+              const disabled = unavailable || mine || disabledForBooking(representativeDesk, mine);
+
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => !disabled && onSelectDesk(representativeDesk)}
+                  title={
+                    mine
+                      ? `${item.label}: your booking`
+                      : unavailable
+                        ? `${item.label}: booked by ${booked?.name ?? "Booked"}`
+                        : `${item.label}: click to book`
+                  }
+                  aria-label={
+                    mine
+                      ? `${item.label}, your booking`
+                      : unavailable
+                        ? `${item.label}, booked`
+                        : `Select ${item.label}`
+                  }
+                  className={cn(
+                    "absolute box-border rounded-sm border-2 border-transparent bg-transparent transition-all",
+                    !disabled &&
+                      "cursor-pointer hover:border-[#12324A] hover:bg-[#12324A]/20 hover:shadow-[0_0_0_3px_rgba(255,255,255,0.85),0_8px_18px_rgba(18,50,74,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                    mine && "cursor-default border-primary bg-primary/15",
+                    unavailable && "cursor-not-allowed border-destructive/70 bg-destructive/10",
+                    disabled && !unavailable && !mine && "cursor-not-allowed opacity-50",
+                  )}
+                  style={boundsStyle(item.bounds)}
+                >
+                  <span className="sr-only">{item.label}</span>
+                  {mine && (
+                    <Check
+                      className="absolute right-0.5 top-0.5 h-3 w-3 text-primary"
+                      aria-hidden
+                    />
+                  )}
+                </button>
+              );
+            })}
         </div>
       </div>
     </Card>

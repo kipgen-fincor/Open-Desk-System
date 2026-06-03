@@ -1,11 +1,10 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Monitor, ArrowUpDown, Lock, Presentation, Check } from "lucide-react";
+import { ArrowLeft, Monitor, ArrowUpDown, Lock, Presentation } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { BookDeskDialog, type BookDeskTarget } from "@/components/book-desk-dialog";
 import { OfficeMapBookingView } from "@/components/office-map-booking-view";
-import { BookRoomDialog, type Room } from "@/routes/rooms";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,15 +48,12 @@ type BookingRow = {
   user_profiles?: { full_name: string | null; email: string | null } | null;
 };
 
-type RoomRow = Room;
-
 function BookView() {
   const { date } = useParams({ from: "/book/$date" });
   const qc = useQueryClient();
   const { user } = useAuth();
-  const [view, setView] = useState<"grid" | "table" | "map">("map");
+  const [view, setView] = useState<"table" | "map">("map");
   const [selectedDesk, setSelectedDesk] = useState<DeskRow | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState<RoomRow | null>(null);
 
   const dateBlocked = !isWithinBookingWindow(date) || isWeekend(date);
 
@@ -85,21 +81,6 @@ function BookView() {
         .order("desk_code");
       if (error) throw error;
       return data as unknown as DeskRow[];
-    },
-  });
-
-  const { data: rooms = [] } = useQuery({
-    queryKey: ["office-rooms-for-map"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("office_rooms")
-        .select(
-          "id, room_code, room_name, room_type, capacity, has_projector, has_whiteboard, has_video_conf, is_active",
-        )
-        .eq("is_active", true)
-        .order("room_code");
-      if (error) throw error;
-      return data as RoomRow[];
     },
   });
 
@@ -144,25 +125,6 @@ function BookView() {
     }
     return m;
   }, [bookings]);
-
-  const zones = useMemo(() => {
-    const grouped = new Map<
-      string,
-      { zone_code: string; description: string | null; desks: DeskRow[] }
-    >();
-    for (const d of desks) {
-      const key = d.zone_id;
-      if (!grouped.has(key)) {
-        grouped.set(key, {
-          zone_code: d.office_zones.zone_code,
-          description: d.office_zones.description,
-          desks: [],
-        });
-      }
-      grouped.get(key)!.desks.push(d);
-    }
-    return Array.from(grouped.values()).sort((a, b) => a.zone_code.localeCompare(b.zone_code));
-  }, [desks]);
 
   const cancelBooking = async (bookingId: string) => {
     if (!user) return;
@@ -239,10 +201,9 @@ function BookView() {
           </div>
         </div>
 
-        <Tabs value={view} onValueChange={(v) => setView(v as "grid" | "table" | "map")}>
+        <Tabs value={view} onValueChange={(v) => setView(v as "table" | "map")}>
           <TabsList>
             <TabsTrigger value="map">Map</TabsTrigger>
-            <TabsTrigger value="grid">Grid</TabsTrigger>
             <TabsTrigger value="table">Table</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -250,51 +211,14 @@ function BookView() {
 
       {desksLoading ? (
         <Card className="p-6 text-sm text-muted-foreground">Loading desks…</Card>
-      ) : view === "grid" ? (
-        <div className="space-y-8">
-          {zones.map((z) => (
-            <section key={z.zone_code}>
-              <div className="mb-3 flex items-baseline gap-3">
-                <h2 className="text-lg font-semibold">Zone {z.zone_code}</h2>
-                {z.description && (
-                  <span className="text-sm text-muted-foreground">{z.description}</span>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                {z.desks.map((d) => {
-                  const booked = bookedMap.get(d.id);
-                  const mine = booked && booked.user_id === user?.id;
-                  const disabled = selectionBlocked(!!mine);
-                  return (
-                    <DeskCard
-                      key={d.id}
-                      desk={d}
-                      booked={!!booked}
-                      bookedByLabel={booked?.name}
-                      mine={!!mine}
-                      disabled={disabled}
-                      onSelect={() => openDeskDialog(d)}
-                      onCancel={
-                        mine && booked && canCancel(date)
-                          ? () => cancelBooking(booked.id)
-                          : undefined
-                      }
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          ))}
-        </div>
       ) : view === "map" ? (
         <OfficeMapBookingView
           desks={desks}
-          rooms={rooms}
           bookedMap={bookedMap}
           currentUserId={user?.id}
           disabledForBooking={(_, mine) => selectionBlocked(mine)}
           onSelectDesk={(desk) => openDeskDialog(desk as DeskRow)}
-          onSelectRoom={setSelectedRoom}
+          mode="desk"
         />
       ) : (
         <Card className="overflow-hidden">
@@ -370,89 +294,7 @@ function BookView() {
           onClose={() => setSelectedDesk(null)}
         />
       )}
-      {selectedRoom && <BookRoomDialog room={selectedRoom} onClose={() => setSelectedRoom(null)} />}
     </div>
-  );
-}
-
-function DeskCard({
-  desk,
-  booked,
-  bookedByLabel,
-  mine,
-  disabled,
-  onSelect,
-  onCancel,
-}: {
-  desk: DeskRow;
-  booked: boolean;
-  bookedByLabel?: string;
-  mine: boolean;
-  disabled: boolean;
-  onSelect: () => void;
-  onCancel?: () => void;
-}) {
-  return (
-    <Card
-      className={cn(
-        "flex flex-col gap-2 p-4 transition-colors",
-        mine
-          ? "border-primary bg-primary/5"
-          : booked
-            ? "border-destructive/40 bg-destructive/5"
-            : "hover:border-primary/40",
-      )}
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-xs uppercase text-muted-foreground">
-            Zone {desk.office_zones.zone_code}
-          </div>
-          <div className="text-lg font-semibold">{desk.desk_code}</div>
-        </div>
-        {mine ? (
-          <Badge className="bg-primary text-primary-foreground">
-            <Check className="mr-1 h-3 w-3" /> Mine
-          </Badge>
-        ) : booked ? (
-          <Badge className="bg-destructive text-destructive-foreground">Booked</Badge>
-        ) : (
-          <Badge className="bg-success text-success-foreground">Free</Badge>
-        )}
-      </div>
-      <FeatureIcons desk={desk} />
-      {booked && !mine && (
-        <div className="truncate text-xs text-muted-foreground" title={bookedByLabel}>
-          {bookedByLabel}
-        </div>
-      )}
-      <div className="mt-auto flex gap-2 pt-2">
-        {mine ? (
-          onCancel ? (
-            <>
-              <Button size="sm" variant="default" className="flex-1" disabled>
-                Active
-              </Button>
-              <Button size="sm" variant="outline" className="flex-1" onClick={onCancel}>
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button size="sm" variant="outline" className="w-full" disabled>
-              Active · Locked
-            </Button>
-          )
-        ) : booked ? (
-          <Button size="sm" variant="outline" className="w-full" disabled>
-            Unavailable
-          </Button>
-        ) : (
-          <Button size="sm" className="w-full" disabled={disabled} onClick={onSelect}>
-            Select desk
-          </Button>
-        )}
-      </div>
-    </Card>
   );
 }
 

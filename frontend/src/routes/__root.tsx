@@ -9,7 +9,6 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import faviconUrl from "../favicon-io.svg?url";
 import { AuthProvider } from "@/lib/auth-context";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -90,8 +89,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "icon",
-        type: "image/webp",
-        href: faviconUrl,
+        type: "image/png",
+        sizes: "32x32",
+        href: "/favicon-32.png",
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "16x16",
+        href: "/favicon-16.png",
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        sizes: "48x48",
+        href: "/favicon-48.png",
+      },
+      {
+        rel: "shortcut icon",
+        href: "/favicon.ico",
+      },
+      {
+        rel: "apple-touch-icon",
+        sizes: "180x180",
+        href: "/favicon-180.png",
       },
     ],
   }),

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Projector, Presentation, Video, Users } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { OfficeMapBookingView } from "@/components/office-map-booking-view";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -54,8 +64,28 @@ export type Room = {
   is_active: boolean;
 };
 
+type DeskForMap = {
+  id: string;
+  desk_code: string;
+  office_zones: { zone_code: string; description: string | null };
+};
+
 function RoomsPage() {
+  const [view, setView] = useState<"map" | "table">("map");
   const [bookingRoom, setBookingRoom] = useState<Room | null>(null);
+
+  const { data: desks = [] } = useQuery({
+    queryKey: ["desks-for-room-map"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("office_desks")
+        .select("id, desk_code, office_zones(zone_code, description)")
+        .eq("is_active", true)
+        .order("desk_code");
+      if (error) throw error;
+      return data as unknown as DeskForMap[];
+    },
+  });
 
   const { data: rooms = [], isLoading } = useQuery({
     queryKey: ["office-rooms"],
@@ -74,21 +104,84 @@ function RoomsPage() {
 
   const meetingRooms = rooms.filter((r) => r.room_type === "meeting_room");
   const callRooms = rooms.filter((r) => r.room_type === "call_room");
+  const emptyBookedMap = useMemo(
+    () => new Map<string, { id: string; user_id: string; name: string }>(),
+    [],
+  );
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold">Rooms</h1>
-        <p className="text-sm text-muted-foreground">Book meeting rooms and call rooms.</p>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Room Booking</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Book meeting rooms and call booths from the office map.
+          </p>
+        </div>
+
+        <Tabs value={view} onValueChange={(v) => setView(v as "map" | "table")}>
+          <TabsList>
+            <TabsTrigger value="map">Map</TabsTrigger>
+            <TabsTrigger value="table">Table</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {isLoading ? (
-        <Card className="p-6 text-sm text-muted-foreground">Loading rooms…</Card>
+        <Card className="p-6 text-sm text-muted-foreground">Loading rooms...</Card>
+      ) : view === "map" ? (
+        <OfficeMapBookingView
+          desks={desks}
+          rooms={rooms}
+          bookedMap={emptyBookedMap}
+          disabledForBooking={() => true}
+          onSelectDesk={() => undefined}
+          onSelectRoom={setBookingRoom}
+          mode="room"
+        />
       ) : (
-        <>
-          <RoomSection title="Meeting Rooms" rooms={meetingRooms} onBook={setBookingRoom} />
-          <RoomSection title="Call Rooms" rooms={callRooms} onBook={setBookingRoom} />
-        </>
+        <Card className="overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Room</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Capacity</TableHead>
+                <TableHead>Features</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...meetingRooms, ...callRooms].map((room) => (
+                <TableRow key={room.id}>
+                  <TableCell>
+                    <div className="font-medium">{room.room_code}</div>
+                    <div className="text-sm text-muted-foreground">{room.room_name}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {room.room_type === "meeting_room" ? "Meeting Room" : "Call Booth"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center gap-1">
+                      <Users className="h-3.5 w-3.5" />
+                      {room.capacity}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <RoomFeatureBadges room={room} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" onClick={() => setBookingRoom(room)}>
+                      Book
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       {bookingRoom && <BookRoomDialog room={bookingRoom} onClose={() => setBookingRoom(null)} />}
@@ -96,55 +189,25 @@ function RoomsPage() {
   );
 }
 
-function RoomSection({
-  title,
-  rooms,
-  onBook,
-}: {
-  title: string;
-  rooms: Room[];
-  onBook: (r: Room) => void;
-}) {
-  if (rooms.length === 0) return null;
+function RoomFeatureBadges({ room }: { room: Room }) {
   return (
-    <section>
-      <h2 className="mb-3 text-lg font-semibold">{title}</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {rooms.map((r) => (
-          <Card key={r.id} className="flex flex-col gap-2 p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-xs uppercase text-muted-foreground">{r.room_code}</div>
-                <div className="text-lg font-semibold">{r.room_name}</div>
-              </div>
-              <Badge variant="secondary" className="flex items-center gap-1">
-                <Users className="h-3 w-3" /> {r.capacity}
-              </Badge>
-            </div>
-            <div className="flex flex-wrap gap-1.5 text-xs">
-              {r.has_projector && (
-                <Badge variant="outline" className="gap-1">
-                  <Projector className="h-3 w-3" /> Projector
-                </Badge>
-              )}
-              {r.has_whiteboard && (
-                <Badge variant="outline" className="gap-1">
-                  <Presentation className="h-3 w-3" /> Whiteboard
-                </Badge>
-              )}
-              {r.has_video_conf && (
-                <Badge variant="outline" className="gap-1">
-                  <Video className="h-3 w-3" /> Video Conf
-                </Badge>
-              )}
-            </div>
-            <Button size="sm" className="mt-auto" onClick={() => onBook(r)}>
-              Book
-            </Button>
-          </Card>
-        ))}
-      </div>
-    </section>
+    <div className="flex flex-wrap gap-1.5 text-xs">
+      {room.has_projector && (
+        <Badge variant="outline" className="gap-1">
+          <Projector className="h-3 w-3" /> Projector
+        </Badge>
+      )}
+      {room.has_whiteboard && (
+        <Badge variant="outline" className="gap-1">
+          <Presentation className="h-3 w-3" /> Whiteboard
+        </Badge>
+      )}
+      {room.has_video_conf && (
+        <Badge variant="outline" className="gap-1">
+          <Video className="h-3 w-3" /> Video Conf
+        </Badge>
+      )}
+    </div>
   );
 }
 
