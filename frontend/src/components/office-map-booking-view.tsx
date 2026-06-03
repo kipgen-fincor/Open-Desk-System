@@ -160,10 +160,11 @@ export function OfficeMapBookingView({
               title={`Book ${room.label}`}
               aria-label={`Book ${room.label}`}
               className={cn(
-                "absolute box-border cursor-pointer rounded-sm border-2 border-transparent bg-transparent transition-colors",
-                "hover:border-secondary hover:bg-secondary/15",
+                "absolute box-border cursor-pointer rounded-sm border-2 border-transparent bg-transparent transition-all",
+                "hover:border-[#12324A] hover:bg-[#12324A]/20 hover:shadow-[0_0_0_3px_rgba(255,255,255,0.85),0_10px_22px_rgba(18,50,74,0.35)]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-1",
-                room.roomKind === "call" && "rounded-md hover:border-primary hover:bg-primary/10",
+                room.roomKind === "call" &&
+                  "rounded-md hover:border-[#0F5F6B] hover:bg-[#0F5F6B]/20 hover:shadow-[0_0_0_3px_rgba(255,255,255,0.85),0_10px_22px_rgba(15,95,107,0.35)]",
               )}
               style={boundsStyle(room.bounds)}
             >
@@ -176,8 +177,7 @@ export function OfficeMapBookingView({
             const mine = bookings.some((booking) => booking?.user_id === currentUserId);
             const booked = bookings[0];
             const unavailable = bookings.length > 0 && !mine;
-            const disabled =
-              unavailable || mine || disabledForBooking(representativeDesk, mine);
+            const disabled = unavailable || mine || disabledForBooking(representativeDesk, mine);
 
             return (
               <button
@@ -200,22 +200,18 @@ export function OfficeMapBookingView({
                       : `Select ${item.label}`
                 }
                 className={cn(
-                  "absolute box-border rounded-sm border-2 border-transparent bg-transparent transition-colors",
+                  "absolute box-border rounded-sm border-2 border-transparent bg-transparent transition-all",
                   !disabled &&
-                    "cursor-pointer hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                    "cursor-pointer hover:border-[#12324A] hover:bg-[#12324A]/20 hover:shadow-[0_0_0_3px_rgba(255,255,255,0.85),0_8px_18px_rgba(18,50,74,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                   mine && "cursor-default border-primary bg-primary/15",
-                  unavailable &&
-                    "cursor-not-allowed border-destructive/70 bg-destructive/10",
+                  unavailable && "cursor-not-allowed border-destructive/70 bg-destructive/10",
                   disabled && !unavailable && !mine && "cursor-not-allowed opacity-50",
                 )}
                 style={boundsStyle(item.bounds)}
               >
                 <span className="sr-only">{item.label}</span>
                 {mine && (
-                  <Check
-                    className="absolute right-0.5 top-0.5 h-3 w-3 text-primary"
-                    aria-hidden
-                  />
+                  <Check className="absolute right-0.5 top-0.5 h-3 w-3 text-primary" aria-hidden />
                 )}
               </button>
             );
@@ -242,11 +238,8 @@ function buildMapItems(desks: OfficeMapDesk[]) {
 function buildRoomItems(rooms: OfficeMapRoom[]) {
   return rooms.map((room) => {
     const boundsMap =
-      room.room_type === "meeting_room"
-        ? MEETING_ROOM_BOUNDS_BY_CODE
-        : CALL_ROOM_BOUNDS_BY_CODE;
-    const bounds =
-      boundsMap[room.room_code.toUpperCase()] ?? MEETING_ROOM_BOUNDS_BY_CODE.M4;
+      room.room_type === "meeting_room" ? MEETING_ROOM_BOUNDS_BY_CODE : CALL_ROOM_BOUNDS_BY_CODE;
+    const bounds = boundsMap[room.room_code.toUpperCase()] ?? MEETING_ROOM_BOUNDS_BY_CODE.M4;
 
     return {
       key: `office-room-${room.id}`,

@@ -41,6 +41,35 @@ type RawAuditRow = {
   room_booking_id?: string | null;
 };
 
+type DeskAuditLog = RawAuditRow & {
+  booking_id: string | null;
+};
+
+type RoomAuditLog = RawAuditRow & {
+  room_booking_id: string | null;
+};
+
+type OfficeBookingLookup = {
+  id: string;
+  desk_id: string | null;
+};
+
+type OfficeDeskLookup = {
+  id: string;
+  desk_code: string | null;
+};
+
+type RoomBookingLookup = {
+  id: string;
+  room_id: string | null;
+};
+
+type OfficeRoomLookup = {
+  id: string;
+  room_name: string | null;
+  room_code: string | null;
+};
+
 function AuditAdmin() {
   const [filter, setFilter] = useState<AuditFilter>("all");
   const {
@@ -70,21 +99,24 @@ function AuditAdmin() {
       if (roomLogs.error) throw roomLogs.error;
 
       // 2) extract booking ids
+      const rawDeskLogs = (deskLogs.data ?? []) as DeskAuditLog[];
+      const rawRoomLogs = (roomLogs.data ?? []) as RoomAuditLog[];
+
       const bookingIds = Array.from(
         new Set(
-          (deskLogs.data ?? [])
-            .map((r: any) => r.booking_id)
-            .filter((v: any) => v !== null && v !== undefined),
+          rawDeskLogs
+            .map((r) => r.booking_id)
+            .filter((v): v is string => v !== null && v !== undefined),
         ),
-      ) as string[];
+      );
 
       const roomBookingIds = Array.from(
         new Set(
-          (roomLogs.data ?? [])
-            .map((r: any) => r.room_booking_id)
-            .filter((v: any) => v !== null && v !== undefined),
+          rawRoomLogs
+            .map((r) => r.room_booking_id)
+            .filter((v): v is string => v !== null && v !== undefined),
         ),
-      ) as string[];
+      );
 
       // 3) fetch office_bookings and map to desk codes
       const deskCodeByBookingId: Record<string, string | null> = {};
@@ -92,24 +124,27 @@ function AuditAdmin() {
         const { data: officeBookings, error: officeBookingsError } = await supabase
           .from("office_bookings")
           .select("id, desk_id")
-          .in("id", bookingIds as any[]);
+          .in("id", bookingIds);
         if (officeBookingsError) throw officeBookingsError;
 
-        const deskIds = Array.from(new Set((officeBookings ?? []).map((b: any) => b.desk_id).filter(Boolean)));
-        let desks: any[] = [];
+        const typedOfficeBookings = (officeBookings ?? []) as OfficeBookingLookup[];
+        const deskIds = Array.from(
+          new Set(typedOfficeBookings.map((b) => b.desk_id).filter((v): v is string => !!v)),
+        );
+        let desks: OfficeDeskLookup[] = [];
         if (deskIds.length > 0) {
           const { data: officeDesks, error: officeDesksError } = await supabase
             .from("office_desks")
             .select("id, desk_code")
-            .in("id", deskIds as any[]);
+            .in("id", deskIds);
           if (officeDesksError) throw officeDesksError;
-          desks = officeDesks ?? [];
+          desks = (officeDesks ?? []) as OfficeDeskLookup[];
         }
 
         const deskCodeById: Record<string, string | null> = {};
         for (const d of desks) deskCodeById[d.id] = d.desk_code ?? null;
-        for (const b of officeBookings ?? []) {
-          deskCodeByBookingId[b.id] = deskCodeById[b.desk_id] ?? null;
+        for (const b of typedOfficeBookings) {
+          deskCodeByBookingId[b.id] = b.desk_id ? (deskCodeById[b.desk_id] ?? null) : null;
         }
       }
 
@@ -119,48 +154,55 @@ function AuditAdmin() {
         const { data: roomBookings, error: roomBookingsError } = await supabase
           .from("room_bookings")
           .select("id, room_id")
-          .in("id", roomBookingIds as any[]);
+          .in("id", roomBookingIds);
         if (roomBookingsError) throw roomBookingsError;
 
-        const roomIds = Array.from(new Set((roomBookings ?? []).map((b: any) => b.room_id).filter(Boolean)));
-        let rooms: any[] = [];
+        const typedRoomBookings = (roomBookings ?? []) as RoomBookingLookup[];
+        const roomIds = Array.from(
+          new Set(typedRoomBookings.map((b) => b.room_id).filter((v): v is string => !!v)),
+        );
+        let rooms: OfficeRoomLookup[] = [];
         if (roomIds.length > 0) {
           const { data: officeRooms, error: officeRoomsError } = await supabase
             .from("office_rooms")
             .select("id, room_name, room_code")
-            .in("id", roomIds as any[]);
+            .in("id", roomIds);
           if (officeRoomsError) throw officeRoomsError;
-          rooms = officeRooms ?? [];
+          rooms = (officeRooms ?? []) as OfficeRoomLookup[];
         }
 
         const roomNameById: Record<string, { name?: string | null; code?: string | null }> = {};
-        for (const r of rooms) roomNameById[r.id] = { name: r.room_name ?? null, code: r.room_code ?? null };
-        for (const b of roomBookings ?? []) {
-          const rr = roomNameById[b.room_id];
+        for (const r of rooms) {
+          roomNameById[r.id] = { name: r.room_name ?? null, code: r.room_code ?? null };
+        }
+        for (const b of typedRoomBookings) {
+          const rr = b.room_id ? roomNameById[b.room_id] : undefined;
           roomNameByBookingId[b.id] = rr?.name ?? rr?.code ?? null;
         }
       }
 
       // 5) merge results in JS and return normalized AuditRow[]
-      const deskRows = (deskLogs.data ?? []).map((r: any) => ({
+      const deskRows = rawDeskLogs.map((r) => ({
         id: r.id,
         action: r.action ?? r.action_type ?? "—",
         created_at: r.created_at,
         user: getUserFullName(r.user_profiles),
         source: "desk" as AuditSource,
-        booking: deskCodeByBookingId[r.booking_id] ?? null,
+        booking: r.booking_id ? (deskCodeByBookingId[r.booking_id] ?? null) : null,
       }));
 
-      const roomRows = (roomLogs.data ?? []).map((r: any) => ({
+      const roomRows = rawRoomLogs.map((r) => ({
         id: r.id,
         action: r.action ?? r.action_type ?? "—",
         created_at: r.created_at,
         user: getUserFullName(r.user_profiles),
         source: "room" as AuditSource,
-        booking: roomNameByBookingId[r.room_booking_id] ?? null,
+        booking: r.room_booking_id ? (roomNameByBookingId[r.room_booking_id] ?? null) : null,
       }));
 
-      return [...deskRows, ...roomRows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return [...deskRows, ...roomRows].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
     },
   });
 
@@ -215,7 +257,7 @@ function AuditAdmin() {
                       {new Date(row.created_at).toLocaleString()}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{row.action}</Badge>
+                      <ActionBadge action={row.action} />
                     </TableCell>
                     <TableCell>
                       <TypeBadge source={row.source} />
@@ -232,8 +274,6 @@ function AuditAdmin() {
     </Card>
   );
 }
-
-
 
 function getUserFullName(profile: RawAuditRow["user_profiles"]): string | null {
   if (Array.isArray(profile)) return profile[0]?.full_name ?? null;
@@ -260,6 +300,39 @@ function FilterButton({
       {children}
     </Button>
   );
+}
+
+function ActionBadge({ action }: { action: string }) {
+  const normalized = action.replace(/[\s-]+/g, "_").toUpperCase();
+  const colorClass = getActionBadgeClass(normalized);
+
+  return (
+    <Badge className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", colorClass)}>
+      {action}
+    </Badge>
+  );
+}
+
+function getActionBadgeClass(action: string) {
+  if (/(CREATE|CREATED|BOOKING_CREATED|SUCCESS|ASSIGNED)/.test(action)) {
+    return "bg-emerald-100 text-emerald-800";
+  }
+  if (/(UPDATE|MODIFIED|CHANGE|CHANGED|EDIT)/.test(action)) {
+    return "bg-teal-100 text-teal-800";
+  }
+  if (/(CANCEL|DELETE|REMOVED|RELEASED)/.test(action)) {
+    return "bg-red-100 text-red-800";
+  }
+  if (/(LOGIN|AUTH)/.test(action)) {
+    return "bg-indigo-100 text-indigo-800";
+  }
+  if (/(SYSTEM|AUTO_RELEASE|AUTO)/.test(action)) {
+    return "bg-amber-100 text-amber-800";
+  }
+  if (/(ERROR|FAILED|FAILURE)/.test(action)) {
+    return "bg-red-100 text-red-800";
+  }
+  return "bg-slate-100 text-slate-700";
 }
 
 function TypeBadge({ source }: { source: AuditSource }) {

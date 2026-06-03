@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import faviconUrl from "../favicon-io.svg?url";
 import { AuthProvider } from "@/lib/auth-context";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -74,10 +75,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "DeskBook — Office Desk Booking" },
+      { title: "FINCOR — Office Desk Booking" },
       { name: "description", content: "Book your office desk in seconds." },
-      { name: "author", content: "DeskBook" },
-      { property: "og:title", content: "DeskBook" },
+      { name: "author", content: "FINCOR" },
+      { property: "og:title", content: "FINCOR" },
       { property: "og:description", content: "Book your office desk in seconds." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -86,6 +87,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: appCss,
+      },
+      {
+        rel: "icon",
+        type: "image/webp",
+        href: faviconUrl,
       },
     ],
   }),

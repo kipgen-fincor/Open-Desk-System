@@ -329,132 +329,136 @@ export function BookRoomDialog({ room, onClose }: { room: Room; onClose: () => v
 
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg flex-col gap-0 overflow-hidden p-0 sm:max-h-[calc(100dvh-3rem)]">
+        <DialogHeader className="shrink-0 border-b border-border px-4 py-3 pr-10 sm:px-5">
           <DialogTitle>
             Book {room.room_code} — {room.room_name}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="rb-date">Date</Label>
-            <Input
-              id="rb-date"
-              type="date"
-              value={date}
-              min={today}
-              onChange={(e) => setDate(e.target.value)}
-            />
-            {holiday && <p className="text-xs text-destructive">Public holiday: {holiday}</p>}
-            {isWeekend(date) && (
-              <p className="text-xs text-destructive">Weekends are not bookable</p>
-            )}
-            {!isWithinBookingWindow(date) && (
-              <p className="text-xs text-destructive">Outside 7-day booking window</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Start</Label>
-              <Select
-                value={startTime}
-                onValueChange={(v) => {
-                  setTimeInteracted(true);
-                  setStartTime(v);
-                  if (endTime <= v) {
-                    const i = ALL_SLOTS.indexOf(v);
-                    setEndTime(ALL_SLOTS[i + 1] ?? "20:00");
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="max-h-64">
-                  {startSlots.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">
+          <div className="space-y-2.5">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="rb-date">Date</Label>
+                <Input
+                  id="rb-date"
+                  type="date"
+                  value={date}
+                  min={today}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+                {holiday && <p className="text-xs text-destructive">Public holiday: {holiday}</p>}
+                {isWeekend(date) && (
+                  <p className="text-xs text-destructive">Weekends are not bookable</p>
+                )}
+                {!isWithinBookingWindow(date) && (
+                  <p className="text-xs text-destructive">Outside 7-day booking window</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="rb-att">Attendees (max {room.capacity})</Label>
+                <Input
+                  id="rb-att"
+                  type="number"
+                  min={1}
+                  max={room.capacity}
+                  value={attendees}
+                  onChange={(e) => setAttendees(Number(e.target.value))}
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>End</Label>
-              <Select
-                value={endTime}
-                onValueChange={(v) => {
-                  setTimeInteracted(true);
-                  setEndTime(v);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="max-h-64">
-                  {endSlots.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {minDurationInvalid && (
-                <p className="text-xs text-destructive">Minimum booking duration is 15 minutes</p>
-              )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Start</Label>
+                <Select
+                  value={startTime}
+                  onValueChange={(v) => {
+                    setTimeInteracted(true);
+                    setStartTime(v);
+                    if (endTime <= v) {
+                      const i = ALL_SLOTS.indexOf(v);
+                      setEndTime(ALL_SLOTS[i + 1] ?? "20:00");
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {startSlots.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>End</Label>
+                <Select
+                  value={endTime}
+                  onValueChange={(v) => {
+                    setTimeInteracted(true);
+                    setEndTime(v);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {endSlots.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {minDurationInvalid && (
+                  <p className="text-xs text-destructive">Minimum booking duration is 15 minutes</p>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="rb-title">Title (optional)</Label>
-            <Input
-              id="rb-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Sprint Planning"
+            <div className="space-y-1.5">
+              <Label htmlFor="rb-title">Title (optional)</Label>
+              <Input
+                id="rb-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Sprint Planning"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="rb-notes">Notes</Label>
+              <Textarea
+                id="rb-notes"
+                rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="min-h-16"
+              />
+            </div>
+
+            <RoomDayTimeline
+              date={date}
+              bookings={existing}
+              isLoading={existingFetching}
+              startTime={startTime}
+              endTime={endTime}
+              title={title}
+              conflicts={previewConflicts}
+              onSelectStart={selectTimelineStart}
             />
+            {previewConflicts && (
+              <p className="text-xs text-destructive">Conflicts with an existing booking</p>
+            )}
           </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="rb-att">Attendees (max {room.capacity})</Label>
-            <Input
-              id="rb-att"
-              type="number"
-              min={1}
-              max={room.capacity}
-              value={attendees}
-              onChange={(e) => setAttendees(Number(e.target.value))}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="rb-notes">Notes</Label>
-            <Textarea
-              id="rb-notes"
-              rows={2}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </div>
-
-          <RoomDayTimeline
-            date={date}
-            bookings={existing}
-            isLoading={existingFetching}
-            startTime={startTime}
-            endTime={endTime}
-            title={title}
-            conflicts={previewConflicts}
-            onSelectStart={selectTimelineStart}
-          />
-          {previewConflicts && (
-            <p className="text-xs text-destructive">Conflicts with an existing booking</p>
-          )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 gap-2 border-t border-border px-4 py-3 sm:px-5">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
@@ -508,13 +512,13 @@ function RoomDayTimeline({
       {isLoading ? (
         <div className="space-y-2 rounded-md border border-border p-3">
           <Skeleton className="h-6 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-14 w-full" />
         </div>
       ) : (
         <div
           ref={scrollRef}
-          className="max-h-72 overflow-y-auto rounded-md border border-border bg-card"
+          className="max-h-[min(34vh,15rem)] overflow-y-auto rounded-md border border-border bg-card"
         >
           <div
             className="relative grid cursor-pointer grid-cols-[56px_1fr]"

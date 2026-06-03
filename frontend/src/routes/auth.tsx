@@ -51,7 +51,7 @@ function PasswordInput({
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — DeskBook" },
+      { title: "Sign in — FINCOR" },
       { name: "description", content: "Sign in to book your office desk." },
     ],
   }),
@@ -109,10 +109,12 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md p-8">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-semibold text-foreground">DeskBook</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Office desk booking made simple
-          </p>
+          <img
+            src="/fincor-logo.webp"
+            alt="Fincor Logo"
+            className="mx-auto h-12 w-auto max-w-44 object-contain"
+          />
+          <p className="mt-1 text-sm text-muted-foreground">Office desk booking made simple</p>
         </div>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as "signin" | "signup")}>

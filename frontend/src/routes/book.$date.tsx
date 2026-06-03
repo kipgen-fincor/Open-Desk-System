@@ -370,9 +370,7 @@ function BookView() {
           onClose={() => setSelectedDesk(null)}
         />
       )}
-      {selectedRoom && (
-        <BookRoomDialog room={selectedRoom} onClose={() => setSelectedRoom(null)} />
-      )}
+      {selectedRoom && <BookRoomDialog room={selectedRoom} onClose={() => setSelectedRoom(null)} />}
     </div>
   );
 }
