@@ -1,0 +1,33 @@
+name: Deploy Pipeline
+
+on:
+  push:
+    branches:
+      - uat
+      - prod
+
+jobs:
+
+  deploy-uat:
+    if: github.ref == 'refs/heads/uat'
+    runs-on: self-hosted
+    environment: uat
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to UAT
+        run: |
+          echo "Deploying to UAT"
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/prod'
+    runs-on: self-hosted
+    environment: prod
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Production
+        run: |
+          echo "Deploying to Production"
