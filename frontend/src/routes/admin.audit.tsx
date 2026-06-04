@@ -12,6 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -71,7 +75,12 @@ type OfficeRoomLookup = {
 };
 
 function AuditAdmin() {
+  const USER_FILTER_ALL_VALUE = "__all__";
   const [filter, setFilter] = useState<AuditFilter>("all");
+  const [selectedUser, setSelectedUser] = useState<string>(USER_FILTER_ALL_VALUE);
+  const [usernameQuery, setUsernameQuery] = useState<string>("");
+  const [selectedActions, setSelectedActions] = useState<string[]>([]);
+
   const {
     data: rows = [],
     isLoading,
@@ -206,7 +215,26 @@ function AuditAdmin() {
     },
   });
 
-  const filteredRows = filter === "all" ? rows : rows.filter((row) => row.source === filter);
+  const usernames = Array.from(
+    new Set(rows.map((row) => row.user).filter((name): name is string => !!name)),
+  ).sort((a, b) => a.localeCompare(b));
+
+  const filteredUsernames = usernames.filter((name) =>
+    name.toLowerCase().includes(usernameQuery.toLowerCase()),
+  );
+
+  const filteredRows = rows.filter((row) => {
+    const matchesSource = filter === "all" ? true : row.source === filter;
+    const matchesUser = selectedUser === USER_FILTER_ALL_VALUE ? true : row.user === selectedUser;
+    const matchesAction =
+      selectedActions.length === 0
+        ? true
+        : selectedActions.some((action) => action.toLowerCase() === row.action.toLowerCase());
+
+    return matchesSource && matchesUser && matchesAction;
+  });
+
+  const actionOptions = ["Created", "Cancelled", "Modified", "Updated"];
 
   return (
     <Card className="overflow-hidden">
@@ -216,16 +244,87 @@ function AuditAdmin() {
         </div>
       ) : (
         <>
-          <div className="flex flex-wrap gap-2 border-b border-border p-4">
-            <FilterButton active={filter === "all"} onClick={() => setFilter("all")}>
-              All
-            </FilterButton>
-            <FilterButton active={filter === "desk"} onClick={() => setFilter("desk")}>
-              Desk Bookings
-            </FilterButton>
-            <FilterButton active={filter === "room"} onClick={() => setFilter("room")}>
-              Room Bookings
-            </FilterButton>
+          <div className="flex flex-col gap-3 border-b border-border p-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap gap-2">
+              <FilterButton active={filter === "all"} onClick={() => setFilter("all")}>All</FilterButton>
+              <FilterButton active={filter === "desk"} onClick={() => setFilter("desk")}>Desk Bookings</FilterButton>
+              <FilterButton active={filter === "room"} onClick={() => setFilter("room")}>Room Bookings</FilterButton>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={selectedUser}
+                onValueChange={(value) => setSelectedUser(value)}
+              >
+                <SelectTrigger className="h-8 w-auto text-xs">
+                  <SelectValue placeholder="Filter by User" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[340px]">
+                  <div className="px-3 pb-2 pt-2">
+                    <Input
+                      placeholder="Search users..."
+                      value={usernameQuery}
+                      onChange={(event) => setUsernameQuery(event.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+                  <SelectItem value={USER_FILTER_ALL_VALUE}>All Users</SelectItem>
+                  {filteredUsernames.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">No users found.</div>
+                  ) : (
+                    filteredUsernames.map((username) => (
+                      <SelectItem key={username} value={username}>
+                        {username}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-8 w-auto text-xs justify-between">
+                    {selectedActions.length > 0 ? selectedActions.join(", ") : "Action"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[260px]">
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Actions</p>
+                      <p className="text-sm text-muted-foreground">Select one or more actions.</p>
+                    </div>
+                    <div className="space-y-2">
+                      {actionOptions.map((action) => (
+                        <label
+                          key={action}
+                          className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                        >
+                          <Checkbox
+                            checked={selectedActions.includes(action)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedActions((prev) => [...prev, action]);
+                              } else {
+                                setSelectedActions((prev) => prev.filter((item) => item !== action));
+                              }
+                            }}
+                          />
+                          <span>{action}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedActions([])}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
           <Table>
             <TableHeader>
