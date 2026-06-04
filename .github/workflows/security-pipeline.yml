@@ -1,0 +1,38 @@
+name: Open Desk CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+
+  sonarqube:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  trivy:
+    needs: sonarqube
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy File System Scan
+        run: |
+          trivy fs --format json --output trivy-report.json .
+
+      - name: Upload Trivy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.json
