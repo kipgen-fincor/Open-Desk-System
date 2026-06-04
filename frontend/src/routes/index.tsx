@@ -131,11 +131,12 @@ function CalendarView() {
               root: "w-full",
               months: "w-full",
               month: "w-full",
-              table: "w-full border-separate border-spacing-x-2 border-spacing-y-6",
+              table: "w-full border-separate border-spacing-0",
               weekdays: "grid grid-cols-7 gap-x-2 gap-y-2",
               weekday:
                 "flex h-8 items-center justify-center rounded-md text-xs font-bold text-primary",
-              week: "grid grid-cols-7 gap-x-2 gap-y-3",
+              weeks: "flex flex-col gap-2",
+              week: "grid grid-cols-7 gap-x-2",
               day: "aspect-square p-0",
               today:
                 "rounded-lg bg-primary/10 text-primary ring-2 ring-primary/35 [&_button]:font-semibold",
