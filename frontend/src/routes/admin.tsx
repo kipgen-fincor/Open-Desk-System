@@ -12,13 +12,14 @@ export const Route = createFileRoute("/admin")({
 
 const tabs = [
   { to: "/admin", label: "Overview" },
-  { to: "/admin/bookings", label: "Bookings" },
-  { to: "/admin/room-bookings", label: "Room bookings" },
+  { to: "/admin/bookings", label: "Desk Bookings" },
+  { to: "/admin/room-bookings", label: "Room Bookings" },
   { to: "/admin/zones", label: "Zones" },
   { to: "/admin/desks", label: "Desks" },
+  { to: "/admin/rooms", label: "Rooms" },
   { to: "/admin/holidays", label: "Holidays" },
   { to: "/admin/users", label: "Users" },
-  { to: "/admin/audit", label: "Audit logs" },
+  { to: "/admin/audit", label: "Audit Logs" },
 ] as const;
 
 function AdminLayout() {
