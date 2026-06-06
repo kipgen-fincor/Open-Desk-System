@@ -79,7 +79,7 @@ function AdminBookings() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">All bookings</h2>
+        <h2 className="text-lg font-semibold">All Desk Bookings</h2>
         <Button onClick={() => setAssignOpen(true)}>Assign desk</Button>
       </div>
 
