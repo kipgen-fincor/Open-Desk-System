@@ -73,7 +73,7 @@ function AdminRoomBookings() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">All room bookings</h2>
+      <h2 className="text-lg font-semibold">All Room Bookings</h2>
       <Card className="overflow-hidden">
         <Table>
           <TableHeader>

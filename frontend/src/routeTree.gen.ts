@@ -19,6 +19,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as BookDateRouteImport } from './routes/book.$date'
 import { Route as AdminZonesRouteImport } from './routes/admin.zones'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminRoomsRouteImport } from './routes/admin.rooms'
 import { Route as AdminRoomBookingsRouteImport } from './routes/admin.room-bookings'
 import { Route as AdminHolidaysRouteImport } from './routes/admin.holidays'
 import { Route as AdminDesksRouteImport } from './routes/admin.desks'
@@ -75,6 +76,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRoomsRoute = AdminRoomsRouteImport.update({
+  id: '/rooms',
+  path: '/rooms',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRoomBookingsRoute = AdminRoomBookingsRouteImport.update({
   id: '/room-bookings',
   path: '/room-bookings',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/admin/desks': typeof AdminDesksRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/room-bookings': typeof AdminRoomBookingsRoute
+  '/admin/rooms': typeof AdminRoomsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/zones': typeof AdminZonesRoute
   '/book/$date': typeof BookDateRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/admin/desks': typeof AdminDesksRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/room-bookings': typeof AdminRoomBookingsRoute
+  '/admin/rooms': typeof AdminRoomsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/zones': typeof AdminZonesRoute
   '/book/$date': typeof BookDateRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/admin/desks': typeof AdminDesksRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/room-bookings': typeof AdminRoomBookingsRoute
+  '/admin/rooms': typeof AdminRoomsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/zones': typeof AdminZonesRoute
   '/book/$date': typeof BookDateRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/admin/desks'
     | '/admin/holidays'
     | '/admin/room-bookings'
+    | '/admin/rooms'
     | '/admin/users'
     | '/admin/zones'
     | '/book/$date'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/admin/desks'
     | '/admin/holidays'
     | '/admin/room-bookings'
+    | '/admin/rooms'
     | '/admin/users'
     | '/admin/zones'
     | '/book/$date'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/admin/desks'
     | '/admin/holidays'
     | '/admin/room-bookings'
+    | '/admin/rooms'
     | '/admin/users'
     | '/admin/zones'
     | '/book/$date'
@@ -287,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/rooms': {
+      id: '/admin/rooms'
+      path: '/rooms'
+      fullPath: '/admin/rooms'
+      preLoaderRoute: typeof AdminRoomsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/room-bookings': {
       id: '/admin/room-bookings'
       path: '/room-bookings'
@@ -331,6 +350,7 @@ interface AdminRouteChildren {
   AdminDesksRoute: typeof AdminDesksRoute
   AdminHolidaysRoute: typeof AdminHolidaysRoute
   AdminRoomBookingsRoute: typeof AdminRoomBookingsRoute
+  AdminRoomsRoute: typeof AdminRoomsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminZonesRoute: typeof AdminZonesRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -342,6 +362,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDesksRoute: AdminDesksRoute,
   AdminHolidaysRoute: AdminHolidaysRoute,
   AdminRoomBookingsRoute: AdminRoomBookingsRoute,
+  AdminRoomsRoute: AdminRoomsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminZonesRoute: AdminZonesRoute,
   AdminIndexRoute: AdminIndexRoute,

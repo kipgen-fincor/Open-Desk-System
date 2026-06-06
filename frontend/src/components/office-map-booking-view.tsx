@@ -79,17 +79,17 @@ const DESK_BOUNDS: MapBounds[] = [
   { x: 583.5, y: 1141.5, width: DESK_WIDTH, height: DESK_HEIGHT },
   { x: 696.5, y: 1141.5, width: DESK_WIDTH, height: DESK_HEIGHT },
   { x: 803.5, y: 1140.5, width: DESK_WIDTH, height: DESK_HEIGHT },
-  { x: 472.5, y: 1217.5, width: DESK_WIDTH, height: DESK_HEIGHT },
-  { x: 583.5, y: 1217.5, width: DESK_WIDTH, height: DESK_HEIGHT },
-  { x: 696.5, y: 1217.5, width: DESK_WIDTH, height: DESK_HEIGHT },
-  { x: 803.5, y: 1217.5, width: DESK_WIDTH, height: DESK_HEIGHT },
+  { x: 472.5, y: 1215.5, width: DESK_WIDTH, height: DESK_HEIGHT },
+  { x: 583.5, y: 1215.5, width: DESK_WIDTH, height: DESK_HEIGHT },
+  { x: 696.5, y: 1215.5, width: DESK_WIDTH, height: DESK_HEIGHT },
+  { x: 803.5, y: 1215.5, width: DESK_WIDTH, height: DESK_HEIGHT },
 ];
 
 /** Teal table / meeting-room bookable areas from SVG. */
 const MEETING_ROOM_BOUNDS_BY_CODE: Record<string, MapBounds> = {
   M1: { x: 20.75, y: 893.75, width: 158.5, height: 70.5 },
-  M2: { x: 91.75, y: 1037.75, width: 55.5, height: 90.5 },
-  M3: { x: 63.75, y: 1163.75, width: 118.5, height: 53.5 },
+  M2: { x: 91.75, y: 1037.75, width: 55.5, height: 85 },
+  M3: { x: 93.75, y: 1163.75, width: 55.5, height: 85 },
   M4: { x: 53.75, y: 128.75, width: 148.5, height: 78.5 },
 };
 
