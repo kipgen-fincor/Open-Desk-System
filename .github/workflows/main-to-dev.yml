@@ -1,0 +1,26 @@
+name: Sync Main to Dev
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync main to dev
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+          git checkout dev
+          git merge origin/main --no-edit
+
+          git push origin dev
