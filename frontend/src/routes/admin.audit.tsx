@@ -15,7 +15,13 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -235,6 +241,7 @@ function AuditAdmin() {
   });
 
   const actionOptions = ["Created", "Cancelled", "Modified", "Updated"];
+  const filterControlClass = "h-8 rounded-md px-3 text-xs font-medium";
 
   return (
     <Card className="overflow-hidden">
@@ -246,16 +253,33 @@ function AuditAdmin() {
         <>
           <div className="flex flex-col gap-3 border-b border-border p-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-2">
-              <FilterButton active={filter === "all"} onClick={() => setFilter("all")}>All</FilterButton>
-              <FilterButton active={filter === "desk"} onClick={() => setFilter("desk")}>Desk Bookings</FilterButton>
-              <FilterButton active={filter === "room"} onClick={() => setFilter("room")}>Room Bookings</FilterButton>
+              <FilterButton
+                active={filter === "all"}
+                className={filterControlClass}
+                onClick={() => setFilter("all")}
+              >
+                All
+              </FilterButton>
+              <FilterButton
+                active={filter === "desk"}
+                className={filterControlClass}
+                onClick={() => setFilter("desk")}
+              >
+                Desk Bookings
+              </FilterButton>
+              <FilterButton
+                active={filter === "room"}
+                className={filterControlClass}
+                onClick={() => setFilter("room")}
+              >
+                Room Bookings
+              </FilterButton>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Select
-                value={selectedUser}
-                onValueChange={(value) => setSelectedUser(value)}
-              >
-                <SelectTrigger className="h-8 w-auto text-xs">
+              <Select value={selectedUser} onValueChange={(value) => setSelectedUser(value)}>
+                <SelectTrigger
+                  className={cn(filterControlClass, "w-auto min-w-[118px] bg-background")}
+                >
                   <SelectValue placeholder="Filter by User" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[340px]">
@@ -267,7 +291,9 @@ function AuditAdmin() {
                       className="h-9"
                     />
                   </div>
-                  <SelectItem value={USER_FILTER_ALL_VALUE}>All Users</SelectItem>
+                  <SelectItem value={USER_FILTER_ALL_VALUE} className="text-xs font-medium">
+                    All Users
+                  </SelectItem>
                   {filteredUsernames.length === 0 ? (
                     <div className="px-3 py-2 text-sm text-muted-foreground">No users found.</div>
                   ) : (
@@ -281,7 +307,11 @@ function AuditAdmin() {
               </Select>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button size="sm" variant="outline" className="h-8 w-auto text-xs justify-between">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={cn(filterControlClass, "w-auto justify-between")}
+                  >
                     {selectedActions.length > 0 ? selectedActions.join(", ") : "Action"}
                   </Button>
                 </PopoverTrigger>
@@ -295,7 +325,7 @@ function AuditAdmin() {
                       {actionOptions.map((action) => (
                         <label
                           key={action}
-                          className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                          className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs font-medium"
                         >
                           <Checkbox
                             checked={selectedActions.includes(action)}
@@ -303,7 +333,9 @@ function AuditAdmin() {
                               if (checked) {
                                 setSelectedActions((prev) => [...prev, action]);
                               } else {
-                                setSelectedActions((prev) => prev.filter((item) => item !== action));
+                                setSelectedActions((prev) =>
+                                  prev.filter((item) => item !== action),
+                                );
                               }
                             }}
                           />
@@ -381,10 +413,12 @@ function getUserFullName(profile: RawAuditRow["user_profiles"]): string | null {
 
 function FilterButton({
   active,
+  className,
   onClick,
   children,
 }: {
   active: boolean;
+  className?: string;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -393,7 +427,7 @@ function FilterButton({
       type="button"
       size="sm"
       variant={active ? "default" : "outline"}
-      className={cn(!active && "bg-card")}
+      className={cn(!active && "bg-card", className)}
       onClick={onClick}
     >
       {children}

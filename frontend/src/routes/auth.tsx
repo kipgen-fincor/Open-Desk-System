@@ -72,6 +72,7 @@ function AuthPage() {
   const [suName, setSuName] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
+  const [suConfirmPassword, setSuConfirmPassword] = useState("");
 
   useEffect(() => {
     if (!loading && user) navigate({ to: "/" });
@@ -93,6 +94,10 @@ function AuthPage() {
     e.preventDefault();
     if (suPassword.length < 8) {
       toast.error("Password must be at least 8 characters");
+      return;
+    }
+    if (suPassword !== suConfirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
     setBusy(true);
@@ -184,6 +189,16 @@ function AuthPage() {
                   onChange={setSuPassword}
                 />
                 <p className="text-xs text-muted-foreground">Minimum 8 characters.</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="su-confirm-password">Confirm password</Label>
+                <PasswordInput
+                  id="su-confirm-password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  value={suConfirmPassword}
+                  onChange={setSuConfirmPassword}
+                />
               </div>
               <Button type="submit" className="w-full" disabled={busy}>
                 {busy ? "Creating account…" : "Create account"}
