@@ -1,11 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowUpDown,
-  Lock,
-  Monitor,
-  Presentation,
-} from "lucide-react";
+import { ArrowUpDown, Lock, Monitor, Presentation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,17 +21,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
-import {
-  formatDateLong,
-  isWeekend,
-  isWithinBookingWindow,
-} from "@/lib/date-utils";
-import {
-  DESK_TIME_SLOTS,
-  FULL_DAY_END,
-  FULL_DAY_START,
-  formatTimeRange,
-} from "@/lib/time-slots";
+import { formatDateLong, isWeekend, isWithinBookingWindow } from "@/lib/date-utils";
+import { DESK_TIME_SLOTS, FULL_DAY_END, FULL_DAY_START, formatTimeRange } from "@/lib/time-slots";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -219,10 +205,10 @@ export function BookDeskDialog({
     try {
       await supabase.from("office_audit_logs").insert({
         booking_id: inserted.id,
-        action_type: "created",
+        action_type: "booked",
         performed_by_user_id: user.id,
-        action_notes: `Booking created for ${date} ${effectiveStart}-${effectiveEnd}`,
-        action: "created",
+        action_notes: `Desk booked for ${date} ${effectiveStart}-${effectiveEnd}`,
+        action: "booked",
         table_name: "office_bookings",
         record_id: inserted.id,
       });
@@ -337,9 +323,7 @@ export function BookDeskDialog({
             )}
 
             {dateError && <p className="text-xs text-destructive">{dateError}</p>}
-            {availabilityError && (
-              <p className="text-xs text-destructive">{availabilityError}</p>
-            )}
+            {availabilityError && <p className="text-xs text-destructive">{availabilityError}</p>}
             {submitError && !dateError && !availabilityError && (
               <p className="text-xs text-destructive">{submitError}</p>
             )}
@@ -363,13 +347,7 @@ export function BookDeskDialog({
           </Button>
           <Button
             onClick={submit}
-            disabled={
-              busy ||
-              !!dateBlocked ||
-              !!dateError ||
-              !!timeError ||
-              !!availabilityError
-            }
+            disabled={busy || !!dateBlocked || !!dateError || !!timeError || !!availabilityError}
           >
             {busy ? "Confirming…" : "Confirm seat"}
           </Button>
@@ -393,10 +371,7 @@ function DeskFeatureList({ desk }: { desk: BookDeskTarget }) {
         <Badge
           key={it.label}
           variant="outline"
-          className={cn(
-            "gap-1 text-xs",
-            !it.on && "opacity-40",
-          )}
+          className={cn("gap-1 text-xs", !it.on && "opacity-40")}
         >
           <it.icon className="h-3 w-3" />
           {it.label}

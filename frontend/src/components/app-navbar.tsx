@@ -14,8 +14,10 @@ export function AppNavbar() {
       <Link
         to={to}
         className={cn(
-          "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-          active ? "bg-[#0E7A8A] text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white",
+          "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
+          active
+            ? "bg-[#EEF6F7] text-[#006D7E]"
+            : "text-[#121B2D] hover:bg-[#EEF6F7] hover:text-[#006D7E]",
         )}
       >
         <Icon className="h-4 w-4" />
@@ -25,7 +27,7 @@ export function AppNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-slate-800 bg-slate-900 text-white shadow-sm">
+    <header className="sticky top-0 z-30 w-full border-b border-[#E5E7EB] bg-white text-[#121B2D] shadow-[0_4px_16px_rgba(15,23,42,0.06)]">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center">

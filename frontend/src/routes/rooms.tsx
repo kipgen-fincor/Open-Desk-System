@@ -377,10 +377,10 @@ export function BookRoomDialog({ room, onClose }: { room: Room; onClose: () => v
     try {
       await supabase.from("room_audit_logs").insert({
         room_booking_id: inserted.id,
-        action_type: "created",
+        action_type: "booked",
         performed_by_user_id: user.id,
-        action_notes: `Room booking created for ${date} ${startTime}-${endTime}`,
-        action: "created",
+        action_notes: `Room booked for ${date} ${startTime}-${endTime}`,
+        action: "booked",
         table_name: "room_bookings",
         record_id: inserted.id,
       });

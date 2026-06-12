@@ -8,22 +8,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import {
-  isWeekend, isWithinBookingWindow, todayISODateIST, formatDateLong,
+  isWeekend,
+  isWithinBookingWindow,
+  todayISODateIST,
+  formatDateLong,
 } from "@/lib/date-utils";
 import { toast } from "sonner";
 
@@ -43,7 +65,9 @@ function AdminBookings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("office_bookings")
-        .select("id, booking_date, status, created_at, user_id, desk_id, user_profiles!office_bookings_user_id_fkey(full_name, email), office_desks(desk_code, office_zones(zone_code))")
+        .select(
+          "id, booking_date, status, created_at, user_id, desk_id, user_profiles!office_bookings_user_id_fkey(full_name, email), office_desks(desk_code, office_zones(zone_code))",
+        )
         .order("booking_date", { ascending: false });
       if (error) throw error;
       return data as any[];
@@ -58,7 +82,10 @@ function AdminBookings() {
       .update({ status: "cancelled", cancelled_by_user_id: user.id })
       .eq("id", id);
     setConfirmCancel(null);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Booking cancelled");
     qc.invalidateQueries({ queryKey: ["admin-all-bookings"] });
     try {
@@ -91,7 +118,7 @@ function AdminBookings() {
               <TableHead>Desk</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead>Booked</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -102,39 +129,45 @@ function AdminBookings() {
                   No bookings.
                 </TableCell>
               </TableRow>
-            ) : bookings.map((b) => (
-              <TableRow key={b.id}>
-                <TableCell className="font-medium">
-                  {b.user_profiles?.full_name || b.user_profiles?.email || "—"}
-                </TableCell>
-                <TableCell>
-                  {b.office_desks?.office_zones?.zone_code}-{b.office_desks?.desk_code}
-                </TableCell>
-                <TableCell>{formatDateLong(b.booking_date)}</TableCell>
-                <TableCell>
-                  {b.status === "confirmed" ? (
-                    <Badge className="bg-success text-success-foreground capitalize">{b.status}</Badge>
-                  ) : (
-                    <Badge className="bg-destructive text-destructive-foreground capitalize">{b.status}</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {b.created_at ? new Date(b.created_at).toLocaleDateString() : "—"}
-                </TableCell>
-                <TableCell className="text-right space-x-2">
-                  {b.status === "confirmed" && (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => setChangeBooking(b)}>
-                        Change Desk
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setConfirmCancel(b.id)}>
-                        Cancel
-                      </Button>
-                    </>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
+            ) : (
+              bookings.map((b) => (
+                <TableRow key={b.id}>
+                  <TableCell className="font-medium">
+                    {b.user_profiles?.full_name || b.user_profiles?.email || "—"}
+                  </TableCell>
+                  <TableCell>
+                    {b.office_desks?.office_zones?.zone_code}-{b.office_desks?.desk_code}
+                  </TableCell>
+                  <TableCell>{formatDateLong(b.booking_date)}</TableCell>
+                  <TableCell>
+                    {b.status === "confirmed" ? (
+                      <Badge className="bg-success text-success-foreground capitalize">
+                        {b.status}
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-destructive text-destructive-foreground capitalize">
+                        {b.status}
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {b.created_at ? new Date(b.created_at).toLocaleDateString() : "—"}
+                  </TableCell>
+                  <TableCell className="text-right space-x-2">
+                    {b.status === "confirmed" && (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => setChangeBooking(b)}>
+                          Change Desk
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setConfirmCancel(b.id)}>
+                          Cancel
+                        </Button>
+                      </>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </Card>
@@ -144,7 +177,8 @@ function AdminBookings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
             <AlertDialogDescription>
-              The booking will be marked cancelled and the desk released. This is logged in the audit trail.
+              The booking will be marked cancelled and the desk released. This is logged in the
+              audit trail.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -155,10 +189,12 @@ function AdminBookings() {
       </AlertDialog>
 
       {assignOpen && (
-        <AssignDeskDialog onClose={() => {
-          setAssignOpen(false);
-          qc.invalidateQueries({ queryKey: ["admin-all-bookings"] });
-        }} />
+        <AssignDeskDialog
+          onClose={() => {
+            setAssignOpen(false);
+            qc.invalidateQueries({ queryKey: ["admin-all-bookings"] });
+          }}
+        />
       )}
 
       {changeBooking && (
@@ -213,7 +249,10 @@ function ChangeDeskDialog({ booking, onClose }: { booking: any; onClose: () => v
 
   const submit = async () => {
     if (!admin) return;
-    if (!deskId) { toast.error("Select a desk"); return; }
+    if (!deskId) {
+      toast.error("Select a desk");
+      return;
+    }
     setBusy(true);
     const newDesk = allDesks.find((d: any) => d.id === deskId);
     const newDeskCode = `${newDesk?.office_zones?.zone_code}-${newDesk?.desk_code}`;
@@ -255,32 +294,52 @@ function ChangeDeskDialog({ booking, onClose }: { booking: any; onClose: () => v
         </DialogHeader>
         <div className="space-y-3">
           <div className="text-sm text-muted-foreground">
-            <div><span className="font-medium text-foreground">Employee:</span> {booking.user_profiles?.full_name || booking.user_profiles?.email || "—"}</div>
-            <div><span className="font-medium text-foreground">Current desk:</span> {oldDeskCode}</div>
-            <div><span className="font-medium text-foreground">Date:</span> {formatDateLong(date)}</div>
+            <div>
+              <span className="font-medium text-foreground">Employee:</span>{" "}
+              {booking.user_profiles?.full_name || booking.user_profiles?.email || "—"}
+            </div>
+            <div>
+              <span className="font-medium text-foreground">Current desk:</span> {oldDeskCode}
+            </div>
+            <div>
+              <span className="font-medium text-foreground">Date:</span> {formatDateLong(date)}
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>New desk</Label>
             <Select value={deskId} onValueChange={setDeskId}>
-              <SelectTrigger><SelectValue placeholder="Select available desk" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Select available desk" />
+              </SelectTrigger>
               <SelectContent className="max-h-64">
                 {availableDesks.length === 0 ? (
-                  <div className="p-2 text-xs text-muted-foreground">No other desks available on this date</div>
-                ) : availableDesks.map((d: any) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.office_zones?.zone_code}-{d.desk_code}
-                  </SelectItem>
-                ))}
+                  <div className="p-2 text-xs text-muted-foreground">
+                    No other desks available on this date
+                  </div>
+                ) : (
+                  availableDesks.map((d: any) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.office_zones?.zone_code}-{d.desk_code}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="cd-notes">Notes (optional)</Label>
-            <Textarea id="cd-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Textarea
+              id="cd-notes"
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button onClick={submit} disabled={busy || !deskId}>
             {busy ? "Saving…" : "Change desk"}
           </Button>
@@ -317,8 +376,10 @@ function AssignDeskDialog({ onClose }: { onClose: () => void }) {
     queryKey: ["holiday", date],
     queryFn: async () => {
       const { data } = await supabase
-        .from("office_holidays").select("holiday_name")
-        .eq("holiday_date", date).maybeSingle();
+        .from("office_holidays")
+        .select("holiday_name")
+        .eq("holiday_date", date)
+        .maybeSingle();
       return data?.holiday_name as string | undefined;
     },
   });
@@ -354,10 +415,22 @@ function AssignDeskDialog({ onClose }: { onClose: () => void }) {
 
   const submit = async () => {
     if (!admin) return;
-    if (!employeeId) { toast.error("Select an employee"); return; }
-    if (!deskId) { toast.error("Select a desk"); return; }
-    if (dateBlocked) { toast.error("Date not bookable"); return; }
-    if (holiday) { toast.error("Date is a public holiday"); return; }
+    if (!employeeId) {
+      toast.error("Select an employee");
+      return;
+    }
+    if (!deskId) {
+      toast.error("Select a desk");
+      return;
+    }
+    if (dateBlocked) {
+      toast.error("Date not bookable");
+      return;
+    }
+    if (holiday) {
+      toast.error("Date is a public holiday");
+      return;
+    }
     setBusy(true);
     const { data: inserted, error } = await supabase
       .from("office_bookings")
@@ -382,7 +455,7 @@ function AssignDeskDialog({ onClose }: { onClose: () => void }) {
         action_type: "assigned_by_admin",
         performed_by_user_id: admin.id,
         action_notes: `Admin assigned desk for ${date}`,
-        action: "created",
+        action: "booked",
         table_name: "office_bookings",
         record_id: inserted.id,
       });
@@ -402,7 +475,9 @@ function AssignDeskDialog({ onClose }: { onClose: () => void }) {
           <div className="space-y-1.5">
             <Label>Employee</Label>
             <Select value={employeeId} onValueChange={setEmployeeId}>
-              <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Select employee" />
+              </SelectTrigger>
               <SelectContent className="max-h-64">
                 {employees.map((e) => (
                   <SelectItem key={e.id} value={e.id}>
@@ -414,33 +489,54 @@ function AssignDeskDialog({ onClose }: { onClose: () => void }) {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ad-date">Date</Label>
-            <Input id="ad-date" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input
+              id="ad-date"
+              type="date"
+              min={today}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
             {holiday && <p className="text-xs text-destructive">Public holiday: {holiday}</p>}
             {isWeekend(date) && <p className="text-xs text-destructive">Weekends not bookable</p>}
-            {!isWithinBookingWindow(date) && <p className="text-xs text-destructive">Outside 7-day window</p>}
+            {!isWithinBookingWindow(date) && (
+              <p className="text-xs text-destructive">Outside 7-day window</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Available desk</Label>
             <Select value={deskId} onValueChange={setDeskId}>
-              <SelectTrigger><SelectValue placeholder="Select desk" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Select desk" />
+              </SelectTrigger>
               <SelectContent className="max-h-64">
                 {availableDesks.length === 0 ? (
-                  <div className="p-2 text-xs text-muted-foreground">No desks available on this date</div>
-                ) : availableDesks.map((d: any) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.office_zones?.zone_code}-{d.desk_code}
-                  </SelectItem>
-                ))}
+                  <div className="p-2 text-xs text-muted-foreground">
+                    No desks available on this date
+                  </div>
+                ) : (
+                  availableDesks.map((d: any) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.office_zones?.zone_code}-{d.desk_code}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ad-notes">Notes (optional)</Label>
-            <Textarea id="ad-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Textarea
+              id="ad-notes"
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button onClick={submit} disabled={busy || dateBlocked || !!holiday}>
             {busy ? "Assigning…" : "Assign"}
           </Button>

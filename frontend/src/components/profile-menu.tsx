@@ -144,22 +144,20 @@ export function ProfileMenu() {
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex items-center gap-3 rounded-md px-1 py-1 transition-colors hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0E7A8A]"
+            className="flex items-center gap-3 rounded-md px-1 py-1 text-[#121B2D] transition-colors hover:bg-[#EEF6F7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#08798B]/35"
             aria-label="Open profile menu"
           >
             <div className="hidden text-right sm:block">
-              <div className="text-sm font-medium leading-tight">
+              <div className="text-sm font-semibold leading-tight">
                 {profile?.full_name || profile?.email}
               </div>
-              <div className="text-xs leading-tight text-slate-400">
+              <div className="text-xs leading-tight text-[#65748A]">
                 {profile?.user_role === "admin" ? "Administrator" : "Employee"}
               </div>
             </div>
-            <Avatar className="h-9 w-9 border border-slate-700">
-              {profile?.avatar_url ? (
-                <AvatarImage src={profile.avatar_url} alt="" />
-              ) : null}
-              <AvatarFallback className="bg-[#0E7A8A] text-xs text-white">
+            <Avatar className="h-9 w-9 border border-[#E5E7EB]">
+              {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} alt="" /> : null}
+              <AvatarFallback className="bg-[#08798B] text-xs text-white">
                 {initials}
               </AvatarFallback>
             </Avatar>
@@ -182,7 +180,10 @@ export function ProfileMenu() {
             Change password
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+          <DropdownMenuItem
+            onClick={handleSignOut}
+            className="text-destructive focus:text-destructive"
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Sign out
           </DropdownMenuItem>
@@ -198,7 +199,7 @@ export function ProfileMenu() {
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16 border">
                 {avatarPreview ? <AvatarImage src={avatarPreview} alt="" /> : null}
-                <AvatarFallback className="bg-[#0E7A8A] text-lg text-white">
+                <AvatarFallback className="bg-[#08798B] text-lg text-white">
                   {initials}
                 </AvatarFallback>
               </Avatar>

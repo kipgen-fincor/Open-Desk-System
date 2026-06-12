@@ -27,12 +27,12 @@ function AdminLayout() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Admin</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-bold text-[#121B2D]">Admin</h1>
+        <p className="mt-1 text-sm font-medium text-muted-foreground">
           Manage zones, desks, holidays, users and review audit logs.
         </p>
       </div>
-      <nav className="flex flex-wrap gap-1 border-b border-border">
+      <nav className="flex flex-wrap gap-1 rounded-[16px] border border-border bg-white p-1 shadow-sm">
         {tabs.map((t) => {
           const active = path === t.to;
           return (
@@ -40,10 +40,10 @@ function AdminLayout() {
               key={t.to}
               to={t.to}
               className={cn(
-                "rounded-t-md px-3 py-2 text-sm font-medium transition-colors",
+                "rounded-[12px] px-3 py-2 text-sm font-semibold transition-colors",
                 active
-                  ? "border-b-2 border-primary text-primary"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "bg-[#EAF5F7] text-[#006D7E]"
+                  : "text-muted-foreground hover:bg-[#F6F8FB] hover:text-foreground",
               )}
             >
               {t.label}

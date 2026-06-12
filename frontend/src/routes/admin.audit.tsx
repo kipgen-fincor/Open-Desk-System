@@ -232,15 +232,16 @@ function AuditAdmin() {
   const filteredRows = rows.filter((row) => {
     const matchesSource = filter === "all" ? true : row.source === filter;
     const matchesUser = selectedUser === USER_FILTER_ALL_VALUE ? true : row.user === selectedUser;
+    const rowAction = row.action.toLowerCase() === "created" ? "booked" : row.action.toLowerCase();
     const matchesAction =
       selectedActions.length === 0
         ? true
-        : selectedActions.some((action) => action.toLowerCase() === row.action.toLowerCase());
+        : selectedActions.some((action) => action.toLowerCase() === rowAction);
 
     return matchesSource && matchesUser && matchesAction;
   });
 
-  const actionOptions = ["Created", "Cancelled", "Modified", "Updated"];
+  const actionOptions = ["Booked", "Cancelled", "Modified", "Updated"];
   const filterControlClass = "h-8 rounded-md px-3 text-xs font-medium";
 
   return (
@@ -436,18 +437,19 @@ function FilterButton({
 }
 
 function ActionBadge({ action }: { action: string }) {
-  const normalized = action.replace(/[\s-]+/g, "_").toUpperCase();
+  const displayAction = action.toLowerCase() === "created" ? "booked" : action;
+  const normalized = displayAction.replace(/[\s-]+/g, "_").toUpperCase();
   const colorClass = getActionBadgeClass(normalized);
 
   return (
     <Badge className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", colorClass)}>
-      {action}
+      {displayAction}
     </Badge>
   );
 }
 
 function getActionBadgeClass(action: string) {
-  if (/(CREATE|CREATED|BOOKING_CREATED|SUCCESS|ASSIGNED)/.test(action)) {
+  if (/(BOOK|BOOKED|CREATE|CREATED|BOOKING_CREATED|SUCCESS|ASSIGNED)/.test(action)) {
     return "bg-emerald-100 text-emerald-800";
   }
   if (/(UPDATE|MODIFIED|CHANGE|CHANGED|EDIT)/.test(action)) {
@@ -465,7 +467,7 @@ function getActionBadgeClass(action: string) {
   if (/(ERROR|FAILED|FAILURE)/.test(action)) {
     return "bg-red-100 text-red-800";
   }
-  return "bg-slate-100 text-slate-700";
+  return "bg-[#EEF2F5] text-[#65748A]";
 }
 
 function TypeBadge({ source }: { source: AuditSource }) {
